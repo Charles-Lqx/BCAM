@@ -1,6 +1,6 @@
 package DatenLord.BCAM
 
-import DatenLord.BCAM.BCAMBuildType.{BCAMBuildType, BRUTE}
+import DatenLord.BCAM.BCAMBuildType.{BCAMBuildType, BRUTE, SEGMENT}
 import spinal.lib._
 import spinal.core._
 import spinal.lib.UIntPimper
@@ -42,6 +42,8 @@ case class BCAM(buildType: BCAMBuildType = BRUTE, config: BCAMConfig) extends Co
 
   def Pw = config.Pw
 
+  def Sw = config.Sw
+
   val io = new Bundle {
     val WStream     = slave Stream WriteChannel(config)  // the stream for write BCAM
     val MPattStream = slave Stream MPattChannel(config)  // the pattern Stream which will be addressed
@@ -54,7 +56,7 @@ case class BCAM(buildType: BCAMBuildType = BRUTE, config: BCAMConfig) extends Co
     val TiRAM = Mem(UInt(Cd bits), pow(2, Pw).toInt).init(Seq.fill(pow(2, Pw).toInt)(0)).addAttribute("ram_style", "block")
     val ErRAM = Mem(UInt(Pw bits), Cd).init(Seq.fill(Cd)(0)).addAttribute("ram_style", "block")
 
-    val enWReady     = RegInit(True)
+//    val enWReady     = RegInit(True)
     val rWrStage1    = RegInit(False)
     val rWAddrStage1 = RegInit(io.WStream.WAddr.getZero)
     val rWPattStage1 = RegInit(io.WStream.WPatt.getZero)
@@ -63,20 +65,20 @@ case class BCAM(buildType: BCAMBuildType = BRUTE, config: BCAMConfig) extends Co
     val rWPattStage2 = RegInit(io.WStream.WPatt.getZero)
 
     when(io.WStream.fire) {
-      enWReady.clear()
+//      enWReady.clear()
       rWrStage1    := io.WStream.Wr
       rWAddrStage1 := io.WStream.WAddr
       rWPattStage1 := io.WStream.WPatt
     }.otherwise {
       rWrStage1.clear()
-      enWReady.set()
+//      enWReady.set()
     }
     rWrStage2    := rWrStage1
     rWAddrStage2 := rWAddrStage1
     rWPattStage2 := rWPattStage1
 
-    io.WStream.ready := False
-    io.WStream.ready.setWhen(enWReady)
+//    io.WStream.ready := False
+    io.WStream.ready.set()
 
     val ErWr         = RegInit(False) // True -> Write Mode; False -> Read Mode
     val TiWr         = RegInit(True)  // True -> Write Mode; False -> Erase Mode
@@ -114,6 +116,106 @@ case class BCAM(buildType: BCAMBuildType = BRUTE, config: BCAMConfig) extends Co
     // Priority Encoder for MAddr
     io.MAddrStream.MAddr := OHToUInt(OHMasking.first(RData))
     io.MAddrStream.Match := RData.asBools.reduceBalancedTree(_ | _)
+
+  }
+
+  if (buildType == SEGMENT) {
+    // instantiate the BRAMs which is used to build BCAM for Brute-force type
+    val STiRAM = Mem(UInt(Cd / Sw bits), pow(2, Pw).toInt).init(Seq.fill(pow(2, Pw).toInt)(0)).addAttribute("ram_style", "block")
+    val SegRAM = Mem(UInt(Sw * Pw bits), Cd / Sw).init(Seq.fill(Cd / Sw)(0)).addAttribute("ram_style", "block")
+
+    val enWReady     = RegInit(True)
+    val rWrStage1    = RegInit(False)
+    val rWAddrStage1 = RegInit(io.WStream.WAddr.getZero)
+    val rWPattStage1 = RegInit(io.WStream.WPatt.getZero)
+    val rWrStage2    = RegInit(False)
+    val rWAddrStage2 = RegInit(io.WStream.WAddr.getZero)
+    val rWPattStage2 = RegInit(io.WStream.WPatt.getZero)
+
+    when(io.WStream.fire) {
+      enWReady.clear()
+      rWrStage1    := io.WStream.Wr
+      rWAddrStage1 := io.WStream.WAddr
+      rWPattStage1 := io.WStream.WPatt
+    }.otherwise {
+      rWrStage1.clear()
+      enWReady.set()
+    }
+    rWrStage2    := rWrStage1
+    rWAddrStage2 := rWAddrStage1
+    rWPattStage2 := rWPattStage1
+
+    io.WStream.ready := False
+    io.WStream.ready.setWhen(enWReady)
+
+    val SegWr = RegInit(False) // True -> Write Mode; False -> Read Mode
+    val STiWr = RegInit(True)  // True -> Write Mode; False -> Erase Mode
+
+    val rValidStage1 = RegInit(False)
+    val rValidStage2 = RegInit(False)
+    rValidStage2 := rValidStage1
+
+    // Mapping Logic
+    val MIndc = STiRAM.readSync(io.MPattStream.MPatt, io.MPattStream.ready)
+
+    rValidStage1.clearWhen(io.MAddrStream.ready || !io.MPattStream.ready)
+    when(io.MPattStream.ready) {
+      rValidStage1 := io.MPattStream.valid
+    }
+    io.MPattStream.ready := io.MAddrStream.isFree
+
+    io.MAddrStream.valid := rValidStage2
+
+    val SegAddr   = OHToUInt(OHMasking.first(MIndc))
+    val HighMAddr = RegNext(SegAddr).init(SegAddr.getZero)
+
+    val rMatch = RegNextWhen(MIndc.asBools.reduceBalancedTree(_ | _), rValidStage1).clearWhen(!rValidStage1)
+
+    io.MAddrStream.Match := rMatch
+
+    val MPattTwoPipe    = History(io.MPattStream.MPatt, 3)
+    val RDataForMapping = SegRAM.readSync(SegAddr, rValidStage1)
+
+    val intraSegPEInput = Vec(Bool(), Sw)
+
+    Range(0, Sw).foreach { s =>
+      when(RDataForMapping(U(s * Pw), Pw bits) === MPattTwoPipe(U(2))) {
+        intraSegPEInput(s) := True
+      }
+    }
+    io.MAddrStream.MAddr := Cat(HighMAddr, OHToUInt(OHMasking.first(intraSegPEInput))).asUInt
+
+    // Write Logic : Cycle One
+
+    val STiWMask = rWAddrStage1(U(log2Up(Sw)), log2Up(Cd / Sw) bits).toOneHot
+    val RegWMask = rWAddrStage1(U(0), log2Up(Sw) bits).toOneHot
+
+    val setAllPatt   = UInt(Cd / Sw bits).setAll()
+    val clearAllPatt = UInt(Cd / Sw bits).clearAll()
+
+    val RDataForWrite = SegRAM.readSync(rWAddrStage1(log2Up(Sw), log2Up(Cd / Sw) bits), !SegWr && rWrStage1)
+
+    val PattToRmMuxOutput = rWAddrStage1(U(0), log2Up(Sw) bits).muxList(for (i <- 0 until Sw) yield (i, RDataForWrite(U(i) * Pw, Pw bits)))
+
+    val STiWPatt = Mux(STiWr, rWPattStage1, PattToRmMuxOutput)
+    STiRAM.write(STiWPatt, setAllPatt, STiWr && rWrStage1, STiWMask) // Write data to STiRAM
+
+    val ocurrIndcResults = Vec(Bool(), Sw)
+
+    Range(0, Sw).foreach { s =>
+      when(RDataForWrite(U(s * Pw), Pw bits) === PattToRmMuxOutput) {
+        ocurrIndcResults(s) := True
+      }
+    }
+
+    val MaskingControl = ocurrIndcResults.asBits & ~RegWMask.asBits
+
+    STiRAM.write(STiWPatt, clearAllPatt, !STiWr && rWrStage2, STiWMask) // Conditional erase data from STiRAM
+
+//    val segWriteData = Vec(rWPattStage2.asBools, Sw).flatten.asBits().asUInt
+//    SegRAM.write(rWAddrStage2(U(log2Up(Sw)), log2Up(Cd / Sw) bits), segWriteData, SegWr && rWrStage2, RegWMask)
+
+    // TODO : implement the WriteController
 
   }
 }

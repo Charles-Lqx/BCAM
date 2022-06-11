@@ -1,12 +1,12 @@
 // Generator : SpinalHDL v1.7.0b    git head : 541894e01cf6b5ef03f924225e4f769fb167dea8
 // Component : BCAM
-// Git hash  : 603b9a53360f3d6f4eb8ab7c14c5d03554b6c197
+// Git hash  : 3e580bd1af5b02a432ff256c63b4f9b4eacb2758
 
 `timescale 1ns/1ps
 
 module BCAM (
   input               io_WStream_valid,
-  output reg          io_WStream_ready,
+  output              io_WStream_ready,
   input      [3:0]    io_WStream_payload_WAddr,
   input      [2:0]    io_WStream_payload_WPatt,
   input               io_WStream_payload_Wr,
@@ -31,8 +31,7 @@ module BCAM (
   wire       [15:0]   _zz__zz_1_port_4;
   wire                _zz__zz_1_port_5;
   wire       [15:0]   _zz__zz_io_MAddrStream_payload_MAddr_2;
-  reg                 when_BCAM_l79;
-  reg                 when_BCAM_l95;
+  reg                 when_BCAM_l97;
   reg        [3:0]    _zz_3;
   reg        [2:0]    _zz_4;
   reg                 _zz_5;
@@ -101,7 +100,7 @@ module BCAM (
   assign _zz__zz_1_port_4 = ({15'd0,1'b1} <<< _zz_6);
   assign _zz__zz_io_MAddrStream_payload_MAddr_2 = (_zz_io_MAddrStream_payload_MAddr_1 - 16'h0001);
   assign _zz__zz_1_port = 16'hffff;
-  assign _zz__zz_1_port_2 = (_zz_9 && when_BCAM_l95);
+  assign _zz__zz_1_port_2 = (_zz_9 && when_BCAM_l97);
   assign _zz__zz_1_port_3 = 16'h0;
   assign _zz__zz_1_port_5 = ((! _zz_9) && _zz_5);
   assign _zz__zz_2_port = _zz_7;
@@ -265,13 +264,7 @@ module BCAM (
   end
 
   assign io_WStream_fire = (io_WStream_valid && io_WStream_ready);
-  always @(*) begin
-    io_WStream_ready = 1'b0;
-    if(when_BCAM_l79) begin
-      io_WStream_ready = 1'b1;
-    end
-  end
-
+  assign io_WStream_ready = 1'b1;
   assign _zz_10 = (! _zz_8);
   assign _zz_11 = (_zz_9 ? _zz_4 : _zz__zz_2_port1);
   assign _zz_io_MAddrStream_payload_MAddr = _zz__zz_1_port2;
@@ -299,8 +292,7 @@ module BCAM (
   assign io_MAddrStream_payload_Match = ((((_zz_io_MAddrStream_payload_MAddr[0] || _zz_io_MAddrStream_payload_MAddr[1]) || (_zz_io_MAddrStream_payload_MAddr[2] || _zz_io_MAddrStream_payload_MAddr[3])) || ((_zz_io_MAddrStream_payload_MAddr[4] || _zz_io_MAddrStream_payload_MAddr[5]) || (_zz_io_MAddrStream_payload_MAddr[6] || _zz_io_MAddrStream_payload_MAddr[7]))) || (((_zz_io_MAddrStream_payload_MAddr[8] || _zz_io_MAddrStream_payload_MAddr[9]) || (_zz_io_MAddrStream_payload_MAddr[10] || _zz_io_MAddrStream_payload_MAddr[11])) || ((_zz_io_MAddrStream_payload_MAddr[12] || _zz_io_MAddrStream_payload_MAddr[13]) || (_zz_io_MAddrStream_payload_MAddr[14] || _zz_io_MAddrStream_payload_MAddr[15]))));
   always @(posedge clk or posedge reset) begin
     if(reset) begin
-      when_BCAM_l79 <= 1'b1;
-      when_BCAM_l95 <= 1'b0;
+      when_BCAM_l97 <= 1'b0;
       _zz_3 <= 4'b0000;
       _zz_4 <= 3'b000;
       _zz_5 <= 1'b0;
@@ -311,18 +303,16 @@ module BCAM (
       _zz_io_MAddrStream_valid <= 1'b0;
     end else begin
       if(io_WStream_fire) begin
-        when_BCAM_l79 <= 1'b0;
-        when_BCAM_l95 <= io_WStream_payload_Wr;
+        when_BCAM_l97 <= io_WStream_payload_Wr;
         _zz_3 <= io_WStream_payload_WAddr;
         _zz_4 <= io_WStream_payload_WPatt;
       end else begin
-        when_BCAM_l95 <= 1'b0;
-        when_BCAM_l79 <= 1'b1;
+        when_BCAM_l97 <= 1'b0;
       end
-      _zz_5 <= when_BCAM_l95;
+      _zz_5 <= when_BCAM_l97;
       _zz_6 <= _zz_3;
       _zz_7 <= _zz_4;
-      if(when_BCAM_l95) begin
+      if(when_BCAM_l97) begin
         _zz_9 <= 1'b0;
         _zz_8 <= 1'b1;
       end else begin
