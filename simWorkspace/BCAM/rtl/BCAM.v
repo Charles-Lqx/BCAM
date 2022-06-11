@@ -1,5 +1,6 @@
 // Generator : SpinalHDL v1.7.0b    git head : 541894e01cf6b5ef03f924225e4f769fb167dea8
 // Component : BCAM
+// Git hash  : 603b9a53360f3d6f4eb8ab7c14c5d03554b6c197
 
 `timescale 1ns/1ps
 
