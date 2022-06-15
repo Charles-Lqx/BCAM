@@ -11,7 +11,7 @@ import scala.math._
 import scala.collection.mutable._
 
 object BCAMSimFuncs {
-  def doBCAMSim(config: BCAMConfig, testTime: Int) = {
+  def doBCAMSim(buildType: BCAMBuildType, config: BCAMConfig, testTime: Int) = {
 
     def Pw = config.Pw
     def Cd = config.Cd
@@ -33,20 +33,20 @@ object BCAMSimFuncs {
     var mAddrTimes   = 0
     var monitorTimes = 0
 
-    val compiledDut = SimConfig.withFstWave.compile(BCAM(BRUTE, config))
+    val compiledDut = SimConfig.withFstWave.compile(BCAM(buildType, config))
 
     compiledDut.doSimUntilVoid { dut =>
-      val logger = LoggerFactory.getLogger(s"Test : BCAM ")
+      val logger = LoggerFactory.getLogger(s"Test : BCAM for ${BCAMBuildType.asString(buildType)}")
 
-      dut.io.WStream.valid #= false
-      dut.io.WStream.WPatt #= 0
-      dut.io.WStream.WAddr #= 0
-      dut.io.WStream.Wr    #= false
+      dut.io.wStream.valid #= false
+      dut.io.wStream.wPatt #= 0
+      dut.io.wStream.wAddr #= 0
+      dut.io.wStream.wr    #= false
 
-      dut.io.MPattStream.valid #= false
-      dut.io.MPattStream.MPatt #= 0
+      dut.io.mPattStream.valid #= false
+      dut.io.mPattStream.mPatt #= 0
 
-      dut.io.MAddrStream.ready #= false
+      dut.io.mPattStream.ready #= false
 
       dut.clockDomain.forkStimulus(6)
 
@@ -57,14 +57,14 @@ object BCAMSimFuncs {
           wPatt   = nextInt(pow(2, Pw).toInt)
           isValid = nextBoolean()
           if (isValid) {
-            dut.io.WStream.valid #= isValid
-            dut.io.WStream.WAddr #= addr
-            dut.io.WStream.WPatt #= wPatt
-            dut.io.WStream.Wr    #= true
+            dut.io.wStream.valid #= isValid
+            dut.io.wStream.wAddr #= addr
+            dut.io.wStream.wPatt #= wPatt
+            dut.io.wStream.wr    #= true
             wTimes += 1
-            dut.clockDomain.waitSamplingWhere(dut.io.WStream.valid.toBoolean && dut.io.WStream.ready.toBoolean)
+            dut.clockDomain.waitSamplingWhere(dut.io.wStream.valid.toBoolean && dut.io.wStream.ready.toBoolean)
           } else {
-            dut.io.WStream.valid #= isValid
+            dut.io.wStream.valid #= isValid
             dut.clockDomain.waitSampling()
           }
         }
@@ -76,12 +76,12 @@ object BCAMSimFuncs {
           mapValid = nextBoolean()
           mapPatt  = nextInt(pow(2, Pw).toInt)
           if (mapValid) {
-            dut.io.MPattStream.valid #= mapValid
-            dut.io.MPattStream.MPatt #= mapPatt
+            dut.io.mPattStream.valid #= mapValid
+            dut.io.mPattStream.mPatt #= mapPatt
             mPattTimes += 1
-            dut.clockDomain.waitSamplingWhere(dut.io.MPattStream.valid.toBoolean && dut.io.MPattStream.ready.toBoolean)
+            dut.clockDomain.waitSamplingWhere(dut.io.mPattStream.valid.toBoolean && dut.io.mPattStream.ready.toBoolean)
           } else {
-            dut.io.MPattStream.valid #= mapValid
+            dut.io.mPattStream.valid #= mapValid
             dut.clockDomain.waitSampling()
           }
         }
@@ -92,11 +92,11 @@ object BCAMSimFuncs {
         while (mAddrTimes < testTime) {
           mapReady = nextBoolean()
           if (mapReady) {
-            dut.io.MAddrStream.ready #= mapReady
+            dut.io.mAddrStream.ready #= mapReady
             mAddrTimes += 1
-            dut.clockDomain.waitSamplingWhere(dut.io.MAddrStream.valid.toBoolean && dut.io.MAddrStream.ready.toBoolean)
+            dut.clockDomain.waitSamplingWhere(dut.io.mAddrStream.valid.toBoolean && dut.io.mAddrStream.ready.toBoolean)
           } else {
-            dut.io.MAddrStream.ready #= mapReady
+            dut.io.mAddrStream.ready #= mapReady
             dut.clockDomain.waitSampling()
           }
         }
@@ -141,17 +141,17 @@ object BCAMSimFuncs {
       val monitor = fork {
         dut.clockDomain.waitSampling(3)
         while (monitorTimes < testTime * 2) {
-          if (dut.io.MAddrStream.valid.toBoolean && dut.io.MAddrStream.ready.toBoolean) {
-            mappingResultAddr += dut.io.MAddrStream.MAddr.toInt
-            mappingResultMatch += dut.io.MAddrStream.Match.toBoolean
+          if (dut.io.mAddrStream.valid.toBoolean && dut.io.mAddrStream.ready.toBoolean) {
+            mappingResultAddr += dut.io.mAddrStream.mAddr.toInt
+            mappingResultMatch += dut.io.mAddrStream.matchFlag.toBoolean
           }
-          if (dut.io.MPattStream.valid.toBoolean && dut.io.MPattStream.ready.toBoolean) {
-            mappingPattCase += dut.io.MPattStream.MPatt.toInt
+          if (dut.io.mPattStream.valid.toBoolean && dut.io.mPattStream.ready.toBoolean) {
+            mappingPattCase += dut.io.mPattStream.mPatt.toInt
           }
 
-          if (dut.io.WStream.valid.toBoolean && dut.io.WStream.ready.toBoolean) {
-            testCaseAddr += dut.io.WStream.WAddr.toInt
-            testCasePatt += dut.io.WStream.WPatt.toInt
+          if (dut.io.wStream.valid.toBoolean && dut.io.wStream.ready.toBoolean) {
+            testCaseAddr += dut.io.wStream.wAddr.toInt
+            testCasePatt += dut.io.wStream.wPatt.toInt
           }
           monitorTimes += 1
           sleep(6)
@@ -165,7 +165,11 @@ object BCAMSimFuncs {
 }
 
 class BCAMTest extends AnyFunSuite {
-  test("random test !") {
-    BCAMSimFuncs.doBCAMSim(BCAMConfig(16, 3), 500)
+  test("random test for BRUTE-FORCE !") {
+    BCAMSimFuncs.doBCAMSim(BRUTE, BCAMConfig(16, 3), 500)
+  }
+
+  test("random test for SEGMENT!") {
+    BCAMSimFuncs.doBCAMSim(SEGMENT, BCAMConfig(8, 2, 2), 500)
   }
 }
