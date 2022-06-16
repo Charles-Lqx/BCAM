@@ -40,13 +40,13 @@ VL_MODULE(VBCAM___024root) {
         CData/*1:0*/ BCAM__DOT__io_wStream_rData_wPatt;
         CData/*0:0*/ BCAM__DOT__io_wStream_rData_wr;
         CData/*0:0*/ BCAM__DOT__continueWr;
+        CData/*0:0*/ BCAM__DOT___zz_when_BCAM_l163;
         CData/*0:0*/ BCAM__DOT___zz_3;
-        CData/*0:0*/ BCAM__DOT___zz_4;
         CData/*0:0*/ BCAM__DOT__io_mPattStream_rValid;
         CData/*0:0*/ BCAM__DOT__io_mPattStream_halfPipe_fire;
         CData/*1:0*/ BCAM__DOT__io_mPattStream_rData_mPatt;
-        CData/*1:0*/ BCAM__DOT___zz_when_BCAM_l129_1;
-        CData/*1:0*/ BCAM__DOT___zz_when_BCAM_l129_2;
+        CData/*1:0*/ BCAM__DOT___zz_when_BCAM_l127_1;
+        CData/*1:0*/ BCAM__DOT___zz_when_BCAM_l127_2;
         CData/*0:0*/ BCAM__DOT__io_mPattStream_halfPipe_translated_ready;
         CData/*0:0*/ BCAM__DOT___zz_io_mAddrStream_valid_1;
         CData/*3:0*/ BCAM__DOT___zz_io_mAddrStream_payload_mAddr_2;
@@ -60,9 +60,10 @@ VL_MODULE(VBCAM___024root) {
         CData/*0:0*/ BCAM__DOT___zz_io_mAddrStream_valid_5;
         CData/*2:0*/ BCAM__DOT___zz_io_mAddrStream_payload_mAddr_12;
         CData/*0:0*/ BCAM__DOT___zz_io_mAddrStream_payload_matchFlag_1;
-        CData/*1:0*/ BCAM__DOT___zz_when_BCAM_l171_2;
-        CData/*1:0*/ BCAM__DOT___zz_7;
-        CData/*1:0*/ BCAM__DOT___zz_10;
+        CData/*0:0*/ BCAM__DOT___zz_when_BCAM_l163_2;
+        CData/*1:0*/ BCAM__DOT___zz_when_BCAM_l163_4;
+        CData/*1:0*/ BCAM__DOT___zz_6;
+        CData/*1:0*/ BCAM__DOT___zz_9;
         CData/*0:0*/ BCAM__DOT___zz___05Fzz_1symbol_read;
         CData/*0:0*/ BCAM__DOT___zz___05Fzz_1symbol_read_1;
         CData/*0:0*/ BCAM__DOT___zz___05Fzz_1symbol_read_2;
@@ -77,9 +78,9 @@ VL_MODULE(VBCAM___024root) {
         VlUnpacked<CData/*0:0*/, 4> BCAM__DOT___zz_1_symbol1;
         VlUnpacked<CData/*0:0*/, 4> BCAM__DOT___zz_1_symbol2;
         VlUnpacked<CData/*0:0*/, 4> BCAM__DOT___zz_1_symbol3;
-        VlUnpacked<CData/*1:0*/, 4> BCAM__DOT___zz_2_symbol0;
     };
     struct {
+        VlUnpacked<CData/*1:0*/, 4> BCAM__DOT___zz_2_symbol0;
         VlUnpacked<CData/*1:0*/, 4> BCAM__DOT___zz_2_symbol1;
         VlUnpacked<CData/*0:0*/, 3> __Vm_traceActivity;
     };

@@ -53,7 +53,9 @@ case class BCAM(buildType: BCAMBuildType = BRUTE, config: BCAMConfig) extends Co
   }
 
   val halfRateWStream = io.wStream.halfPipe()
-  halfRateWStream.freeRun()
+  if (buildType != SEGMENT) {
+    halfRateWStream.freeRun()
+  }
   val continueWr = RegInit(False).setWhen(halfRateWStream.fire).clearWhen(!halfRateWStream.fire)
 
   buildType match {
@@ -113,22 +115,29 @@ case class BCAM(buildType: BCAMBuildType = BRUTE, config: BCAMConfig) extends Co
       val rMatch =
         RegNextWhen(mIndcStream.payload.asBools.reduceBalancedTree(_ | _), mIndcStream.fire).clearWhen(io.mAddrStream.fire)
 
-      io.mAddrStream.matchFlag := rMatch
+//      io.mAddrStream.matchFlag := rMatch
 
-      io.mAddrStream.arbitrationFrom(mIndcStream.m2sPipe())
+//      io.mAddrStream.arbitrationFrom(mIndcStream.m2sPipe())
 
-      val rDataForMapping = segRAM.readSync(segAddr, mIndcStream.fire)
+//      val rDataForMapping = segRAM.readSync(segAddr, mIndcStream.fire)
 
-      val intraSegPEInput = Vec(False, Sw)
+      val rDataForMapStream = segRAM.streamReadSync(mIndcStream ~ segAddr)
+      val intraSegPEInput   = Vec(False, Sw)
 
       Range(0, Sw).foreach { s =>
-        when(rDataForMapping(U(s * Pw), Pw bits) === mPattTwoPipe(U(2))) {
-          intraSegPEInput(s) := True
+        when(rDataForMapStream.fire) {
+          when(rDataForMapStream.payload(U(s * Pw), Pw bits) === mPattTwoPipe(U(2))) {
+            intraSegPEInput(s) := True
+          }
         }
       }
 
-      io.mAddrStream.mAddr := Cat(highMAddr, OHToUInt(OHMasking.first(intraSegPEInput))).asUInt
+//      io.mAddrStream.mAddr := Cat(highMAddr, OHToUInt(OHMasking.first(intraSegPEInput))).asUInt
 
+      io.mAddrStream <-< rDataForMapStream.translateInto(cloneOf(io.mAddrStream)) { (d, _) =>
+        d.matchFlag := rMatch
+        d.mAddr     := Cat(highMAddr, OHToUInt(OHMasking.first(intraSegPEInput))).asUInt
+      }
       // Write Logic : Cycle One
 
       val sTiWMask = halfRateWStream.wAddr(U(log2Up(Sw)), log2Up(Cd / Sw) bits).toOneHot
@@ -137,22 +146,29 @@ case class BCAM(buildType: BCAMBuildType = BRUTE, config: BCAMConfig) extends Co
       val setAllPatt   = UInt(Cd / Sw bits).setAll()
       val clearAllPatt = UInt(Cd / Sw bits).clearAll()
 
-      val rDataForWrite =
+//      val rDataForWrite =
+//        segRAM
+//          .readSync(halfRateWStream.wAddr(log2Up(Sw), log2Up(Cd / Sw) bits), !segWr && halfRateWStream.fire) // Read Data from SegRAM
+      val rDataForWriteStream =
         segRAM
-          .readSync(halfRateWStream.wAddr(log2Up(Sw), log2Up(Cd / Sw) bits), !segWr && halfRateWStream.wr && halfRateWStream.fire) // Read Data from SegRAM
+          .streamReadSync(halfRateWStream.translateInto(Stream(UInt(log2Up(Cd / Sw) bits))) { (d, s) =>
+            d := s.wAddr(log2Up(Sw), log2Up(Cd / Sw) bits)
+          }) // Read Data from SegRAM
+
+      rDataForWriteStream.freeRun()
 
       val pattToRmMuxOutput =
         halfRateWStream
           .wAddr(U(0), log2Up(Sw) bits)
-          .muxList(for (i <- 0 until Sw) yield (i, rDataForWrite(U(i) * Pw, Pw bits)))
+          .muxList(for (i <- 0 until Sw) yield (i, rDataForWriteStream.payload(U(i) * Pw, Pw bits)))
 
       val sTiWPatt = Mux(sTiWr, halfRateWStream.wPatt, pattToRmMuxOutput)
-      sTiRAM.write(sTiWPatt, setAllPatt, sTiWr && halfRateWStream.wr && halfRateWStream.fire, sTiWMask) // Write data to STiRAM
+      sTiRAM.write(sTiWPatt, setAllPatt, sTiWr && halfRateWStream.fire, sTiWMask) // Write data to STiRAM
 
       val ocurrIndcResults = Vec(False, Sw)
 
       Range(0, Sw).foreach { s =>
-        when(rDataForWrite(U(s * Pw), Pw bits) === pattToRmMuxOutput) {
+        when(rDataForWriteStream.payload(U(s * Pw), Pw bits) === pattToRmMuxOutput) {
           ocurrIndcResults(s) := True
         }
       }

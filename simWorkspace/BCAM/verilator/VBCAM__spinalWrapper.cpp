@@ -159,7 +159,7 @@ public:
     uint32_t timeCheck;
     bool waveEnabled;
     VBCAM top;
-    ISignalAccess *signalAccess[31];
+    ISignalAccess *signalAccess[14];
     #ifdef TRACE
 	  VerilatedFstC tfp;
 	  #endif
@@ -171,37 +171,20 @@ public:
       timeCheck = 0;
       lastFlushAt = high_resolution_clock::now();
       waveEnabled = true;
-      signalAccess[0] = new CDataSignalAccess( top.BCAM->tiRAM_symbol0[0] );
-      signalAccess[1] = new CDataSignalAccess( top.BCAM->tiRAM_symbol1[0] );
-      signalAccess[2] = new CDataSignalAccess( top.BCAM->tiRAM_symbol2[0] );
-      signalAccess[3] = new CDataSignalAccess( top.BCAM->tiRAM_symbol3[0] );
-      signalAccess[4] = new CDataSignalAccess( top.BCAM->tiRAM_symbol4[0] );
-      signalAccess[5] = new CDataSignalAccess( top.BCAM->tiRAM_symbol5[0] );
-      signalAccess[6] = new CDataSignalAccess( top.BCAM->tiRAM_symbol6[0] );
-      signalAccess[7] = new CDataSignalAccess( top.BCAM->tiRAM_symbol7[0] );
-      signalAccess[8] = new CDataSignalAccess( top.BCAM->tiRAM_symbol8[0] );
-      signalAccess[9] = new CDataSignalAccess( top.BCAM->tiRAM_symbol9[0] );
-      signalAccess[10] = new CDataSignalAccess( top.BCAM->tiRAM_symbol10[0] );
-      signalAccess[11] = new CDataSignalAccess( top.BCAM->tiRAM_symbol11[0] );
-      signalAccess[12] = new CDataSignalAccess( top.BCAM->tiRAM_symbol12[0] );
-      signalAccess[13] = new CDataSignalAccess( top.BCAM->tiRAM_symbol13[0] );
-      signalAccess[14] = new CDataSignalAccess( top.BCAM->tiRAM_symbol14[0] );
-      signalAccess[15] = new CDataSignalAccess( top.BCAM->tiRAM_symbol15[0] );
-      signalAccess[16] = new CDataSignalAccess( top.BCAM->erRAM[0] );
-      signalAccess[17] = new CDataSignalAccess( top.io_wStream_valid );
-      signalAccess[18] = new CDataSignalAccess( top.io_wStream_ready );
-      signalAccess[19] = new CDataSignalAccess( top.io_wStream_payload_wAddr );
-      signalAccess[20] = new CDataSignalAccess( top.io_wStream_payload_wPatt );
-      signalAccess[21] = new CDataSignalAccess( top.io_wStream_payload_wr );
-      signalAccess[22] = new CDataSignalAccess( top.io_mPattStream_valid );
-      signalAccess[23] = new CDataSignalAccess( top.io_mPattStream_ready );
-      signalAccess[24] = new CDataSignalAccess( top.io_mPattStream_payload_mPatt );
-      signalAccess[25] = new CDataSignalAccess( top.io_mAddrStream_valid );
-      signalAccess[26] = new CDataSignalAccess( top.io_mAddrStream_ready );
-      signalAccess[27] = new CDataSignalAccess( top.io_mAddrStream_payload_mAddr );
-      signalAccess[28] = new CDataSignalAccess( top.io_mAddrStream_payload_matchFlag );
-      signalAccess[29] = new CDataSignalAccess( top.clk );
-      signalAccess[30] = new CDataSignalAccess( top.reset );
+      signalAccess[0] = new CDataSignalAccess( top.io_wStream_valid );
+      signalAccess[1] = new CDataSignalAccess( top.io_wStream_ready );
+      signalAccess[2] = new CDataSignalAccess( top.io_wStream_payload_wAddr );
+      signalAccess[3] = new CDataSignalAccess( top.io_wStream_payload_wPatt );
+      signalAccess[4] = new CDataSignalAccess( top.io_wStream_payload_wr );
+      signalAccess[5] = new CDataSignalAccess( top.io_mPattStream_valid );
+      signalAccess[6] = new CDataSignalAccess( top.io_mPattStream_ready );
+      signalAccess[7] = new CDataSignalAccess( top.io_mPattStream_payload_mPatt );
+      signalAccess[8] = new CDataSignalAccess( top.io_mAddrStream_valid );
+      signalAccess[9] = new CDataSignalAccess( top.io_mAddrStream_ready );
+      signalAccess[10] = new CDataSignalAccess( top.io_mAddrStream_payload_mAddr );
+      signalAccess[11] = new CDataSignalAccess( top.io_mAddrStream_payload_matchFlag );
+      signalAccess[12] = new CDataSignalAccess( top.clk );
+      signalAccess[13] = new CDataSignalAccess( top.reset );
 
       #ifdef TRACE
       Verilated::traceEverOn(true);
@@ -212,7 +195,7 @@ public:
     }
 
     virtual ~Wrapper_1(){
-      for(int idx = 0;idx < 31;idx++){
+      for(int idx = 0;idx < 14;idx++){
           delete signalAccess[idx];
       }
 
